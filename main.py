@@ -1,5 +1,5 @@
 import pygame
-path = r"C:\Users\AdamWdowiarek\Downloads\chess"
+path = r"C:\Users\AdamWdowiare_sfm\Desktop\chess"
 # BASIC VARIABLES
 width, height = 400,400
 white = (255,255,255)
@@ -34,10 +34,10 @@ def DrawPieces():
             screen.blit(pygame.transform.scale( piece[1], (sqr_size,sqr_size)), Square_to_position(pieces_on_board.index(piece)))
 
 def Compare_pieces_colour(id1, id2):
-    if ((pieces_on_board[id1][0].islower and pieces_on_board[id2][0].isupper()) or( pieces_on_board[id1][0].isupper() and pieces_on_board[id2][0].islower())):
+    if ((pieces_on_board[id1][0].islower() and pieces_on_board[id2][0].isupper()) or (pieces_on_board[id1][0].isupper() and pieces_on_board[id2][0].islower())):
         return True
     else:
-        return False 
+        return False
 
 def GenerateLegalMoves():
     moves = list()
@@ -47,17 +47,26 @@ def GenerateLegalMoves():
             piece_type = piece[0]
             piece_index = pieces_on_board.index(piece)
             if(piece_type.lower() == 'p'):
-                if(piece_type.islower()):
-                    temp_moves.append(piece_index + 8)
-                    if(piece_index <=15):
-                        temp_moves.append(piece_index + 16)
-                else:
-                    temp_moves.append(piece_index - 8)
-                    if(piece_index >= 48):
-                        temp_moves.append(piece_index - 16)
-            moves.append((piece_type, temp_moves))
-            temp_moves = []
+                color = 1 if piece_type.islower() else - 1
+                if(moves_counter % 2 == 0 and color == 1 or moves_counter % 2 == 1 and color == -1):
+                    temp_moves.append(piece_index + 8 * color)
+                    if(piece_index <=15 and color == 1 or piece_index >= 48 and color == -1):
+                        temp_moves.append(piece_index + 16 * color)
+                    if(pieces_on_board[piece_index + 7 * color] != '' and Compare_pieces_colour(piece_index, piece_index + 7 * color)):
+                        temp_moves.append(piece_index + 7 * color)
+                    if(pieces_on_board[piece_index + 9 * color] != '' and Compare_pieces_colour(piece_index, piece_index + 9 * color)):
+                        temp_moves.append(piece_index + 9 * color)
+                moves.append((piece_index, temp_moves))
+                temp_moves = []
     return moves
+
+def CheckIfMoveIsLegal(curr_sqr, dest_sqr):
+    for piece in moves:
+        if (piece[0] == curr_sqr):
+            for square in piece[1]:
+                if(int(square) == int(dest_sqr)):
+                    return True
+    return False
 
 pieces_on_board = ['']*64 #CONTENT IN ORDER: type, path_to_img, position_x, position_y
 id = 0
@@ -73,6 +82,7 @@ for piece in startPossition:
 
 move_1 = move_2 = 0
 moved = True
+moves_counter = 0
 while running:
     if(moved): DrawBoard(height, width, sqr_size)
     moved = False
@@ -82,22 +92,27 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif(event.type == pygame.MOUSEBUTTONDOWN):
-            print(GenerateLegalMoves())
+            moves = GenerateLegalMoves()
             square_id = Position_to_square(pygame.mouse.get_pos())
-            print(square_id)
             if (pieces_on_board[square_id] == ''):
-                if(move_1 != 0):
+                if(move_1 != 0 and CheckIfMoveIsLegal(move_1, square_id)):
                     pieces_on_board[square_id] = pieces_on_board[move_1]
                     pieces_on_board[move_1] = ''
                     move_1 = 0
                     moved = True
+                    moves_counter += 1
+                else:
+                    move_1 = 0
             else:
-                if(move_1 != 0 and Compare_pieces_colour(move_1, square_id)):
+                if(move_1 != 0 and CheckIfMoveIsLegal(move_1, square_id) and move_1 != square_id):
                     pieces_on_board[square_id] = pieces_on_board[move_1]
                     pieces_on_board[move_1] = ''
                     move_1 = 0
                     moved = True
+                    moves_counter += 1
                 elif(move_1 == 0):
                     move_1 = square_id
+                else:
+                    move_1 = 0
         pygame.display.update()
         clock.tick(fps)
