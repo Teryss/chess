@@ -1,3 +1,4 @@
+#### CURRENT STATE IS BUGGED ####
 import pygame
 path = r"C:\Users\AdamWdowiare_sfm\Desktop\chess"
 # BASIC VARIABLES
@@ -46,8 +47,8 @@ def GenerateLegalMoves():
         if(piece != ''):
             piece_type = piece[0]
             piece_index = pieces_on_board.index(piece)
+            color = 1 if piece_type.islower() else - 1
             if(piece_type.lower() == 'p'):
-                color = 1 if piece_type.islower() else - 1
                 if(moves_counter % 2 == 0 and color == 1 or moves_counter % 2 == 1 and color == -1):
                     temp_moves.append(piece_index + 8 * color)
                     if(piece_index <=15 and color == 1 or piece_index >= 48 and color == -1):
@@ -57,15 +58,34 @@ def GenerateLegalMoves():
                     if(pieces_on_board[piece_index + 9 * color] != '' and Compare_pieces_colour(piece_index, piece_index + 9 * color)):
                         temp_moves.append(piece_index + 9 * color)
                 moves.append((piece_index, temp_moves))
-                temp_moves = []
+            if(piece_type.lower() == 'r'):
+                for i in range(piece_index,64,8):
+                    if(i != piece_index):
+                        print(pieces_on_board[i], i)
+                        if(pieces_on_board[i] != [] or pieces_on_board[i] != ''):
+                            temp_moves.append(i)
+                        else:
+                            break
+                moves.append((piece_index, temp_moves))
+                # for i in range(piece_index,-1,-8):
+                #     if(i != piece_index):
+                #         if(pieces_on_board[i] != ''):
+                #             temp_moves.append(piece_index)
+                #         else:
+                #             break
+                print(temp_moves)
+
+            temp_moves = []
     return moves
 
 def CheckIfMoveIsLegal(curr_sqr, dest_sqr):
+    print(moves)
     for piece in moves:
-        if (piece[0] == curr_sqr):
-            for square in piece[1]:
-                if(int(square) == int(dest_sqr)):
-                    return True
+        if(piece != ''):
+            if (piece[0] == curr_sqr):
+                for square in piece[1]:
+                    if(int(square) == int(dest_sqr)):
+                        return True
     return False
 
 pieces_on_board = ['']*64 #CONTENT IN ORDER: type, path_to_img, position_x, position_y
@@ -104,7 +124,7 @@ while running:
                 else:
                     move_1 = 0
             else:
-                if(move_1 != 0 and CheckIfMoveIsLegal(move_1, square_id) and move_1 != square_id):
+                if(move_1 != 0 and move_1 != square_id and CheckIfMoveIsLegal(move_1,square_id)):
                     pieces_on_board[square_id] = pieces_on_board[move_1]
                     pieces_on_board[move_1] = ''
                     move_1 = 0
