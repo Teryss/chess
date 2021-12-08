@@ -1,6 +1,6 @@
-#### CURRENT STATE IS BUGGED ####
+#### MAKING A MOVE IS BUGGED, GENERATING LEGAL MOVES WORKS FINE, IN WORK ####
 import pygame
-path = r"C:\Users\AdamWdowiare_sfm\Desktop\chess"
+path = r"C:\Users\AdamWdowiarek\Downloads\chess-main"
 # BASIC VARIABLES
 width, height = 400,400
 white = (255,255,255)
@@ -25,7 +25,34 @@ def Square_to_row_and_column(square_id):
     return int(square_id / 8), int(square_id % 8)
 
 def Row_and_column_to_square(row, column):
-    pass
+    return row * 8 + column
+
+def Check_piece_movement(args,cur_sqr):
+    legal_moves = list()
+    for i in range(args[0], args[1],args[2]):
+        if(i != cur_sqr):
+            if(pieces_on_board[i] == ''):
+                legal_moves.append(i)
+            else: 
+                if(Compare_pieces_colour(cur_sqr, i)):
+                    legal_moves.append(i)
+                return legal_moves
+    return legal_moves
+def Check_piece_diagnal(cur_sqr):
+    legal_moves = list()
+    row, col = Square_to_row_and_column(cur_sqr)
+    diagnals = ((1,1), (1,-1), (-1,1), (-1,-1))
+    for diagnal in diagnals:
+        for i in range(1,9):
+            check_square = Row_and_column_to_square(row + i * diagnal[0], col + i * diagnal[1])
+            if(check_square <= 63 and check_square >= 0):
+                if(pieces_on_board[check_square] == ''):
+                    legal_moves.append(check_square)
+                else:
+                    if(Compare_pieces_colour(cur_sqr, check_square)):
+                        legal_moves.append(check_square)
+                    break
+    return legal_moves
 
 def DrawBoard(height, width, sqr_size):
     screen.fill(black)
@@ -68,42 +95,14 @@ def GenerateLegalMoves():
                             temp_moves.append(piece_index + 9 * color)
                     moves.append((piece_index, temp_moves))
                 if(piece_type.lower() == 'r'):
-                    for i in range(piece_index,64,8): #UP
-                        if(i != piece_index):
-                            if(pieces_on_board[i] == ''):
-                                temp_moves.append(i)
-                            else:
-                                if(Compare_pieces_colour(piece_index, i)):
-                                    temp_moves.append(i)
-                                break
-                    for i in range(piece_index,-1,-8): #DOWN
-                        if(i != piece_index):
-                            if(pieces_on_board[i] == ''):
-                                temp_moves.append(i)
-                            else:
-                                if(Compare_pieces_colour(piece_index, i)):
-                                    temp_moves.append(i)
-                                break
                     row,col = Square_to_row_and_column(piece_index)
-                    for i in range(piece_index, (row + 1) * 8, 1): #RIGHT
-                        if(i != piece_index):
-                            if(pieces_on_board[i] == ''):
-                                print(piece_index,i)
-                                temp_moves.append(i)
-                            else:
-                                if(Compare_pieces_colour(piece_index, i)):
-                                    temp_moves.append(i)
-                                break
-                    for i in range(piece_index, (row * 8) - 1, -1): #LEFT
-                        if(i != piece_index):
-                            if(pieces_on_board[i] == ''):
-                                print(piece_index,i)
-                                temp_moves.append(i)
-                            else:
-                                if(Compare_pieces_colour(piece_index, i)):
-                                    temp_moves.append(i)
-                                break
-                    moves.append((piece_index, temp_moves))
+                    calc_moves = [Check_piece_movement((piece_index, 64, 8),piece_index), Check_piece_movement((piece_index, -1,-8),piece_index), Check_piece_movement((piece_index, (row + 1) * 8, 1),piece_index), Check_piece_movement((piece_index, (row * 8) - 1, -1),piece_index)]
+                    for diagnal in calc_moves:
+                        for single_move in diagnal:
+                            temp_moves.append(single_move)
+                    moves.append((piece_index,temp_moves))
+                if(piece_type.lower() == 'b'):
+                    moves.append((piece_index, Check_piece_diagnal(piece_index)))
 
             temp_moves = []
     return moves
@@ -164,3 +163,4 @@ while running:
                     move_1 = -1
         pygame.display.update()
         clock.tick(fps)
+print("Your game took: " + str(moves_counter) + " moves!")
