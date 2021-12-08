@@ -1,6 +1,6 @@
 #### CURRENT STATE IS BUGGED ####
 import pygame
-path = r"C:\Users\AdamWdowiare_sfm\Desktop\chess"
+path = r"C:\Users\Administrator\Documents\chess"
 # BASIC VARIABLES
 width, height = 400,400
 white = (255,255,255)
@@ -17,8 +17,12 @@ def Square_to_position(square_id):
     x = square_id % 8 * sqr_size
     y = int(square_id / 8) * sqr_size
     return x,y
+
 def Position_to_square(position):
     return int(position[0] / 50) + 8 * int(position[1]/50)
+
+def Square_to_row_and_column(square_id):
+    return int(square_id / 8), int(square_id % 8)
 
 def DrawBoard(height, width, sqr_size):
     screen.fill(black)
@@ -48,33 +52,55 @@ def GenerateLegalMoves():
             piece_type = piece[0]
             piece_index = pieces_on_board.index(piece)
             color = 1 if piece_type.islower() else - 1
-            if(piece_type.lower() == 'p'):
-                if(moves_counter % 2 == 0 and color == 1 or moves_counter % 2 == 1 and color == -1):
-                    temp_moves.append(piece_index + 8 * color)
-                    if(piece_index <=15 and color == 1 or piece_index >= 48 and color == -1):
-                        temp_moves.append(piece_index + 16 * color)
-                    if(pieces_on_board[piece_index + 7 * color] != '' and Compare_pieces_colour(piece_index, piece_index + 7 * color)):
-                        temp_moves.append(piece_index + 7 * color)
-                    if(pieces_on_board[piece_index + 9 * color] != '' and Compare_pieces_colour(piece_index, piece_index + 9 * color)):
-                        temp_moves.append(piece_index + 9 * color)
-                moves.append((piece_index, temp_moves))
-            if(piece_type.lower() == 'r'):
-                for i in range(piece_index,64,8):
-                    if(i != piece_index):
-                        print(pieces_on_board[i], i)
-                        if(pieces_on_board[i] != [] or pieces_on_board[i] != ''):
-                            temp_moves.append(i)
-                        else:
-                            break
-                moves.append((piece_index, temp_moves))
-                # for i in range(piece_index,-1,-8):
-                #     if(i != piece_index):
-                #         if(pieces_on_board[i] != ''):
-                #             temp_moves.append(piece_index)
-                #         else:
-                #             break
-                print(temp_moves)
-
+            if(moves_counter % 2 == 0 and color == 1 or moves_counter % 2 == 1 and color == -1):
+                if(piece_type.lower() == 'p'):
+                    if(moves_counter % 2 == 0 and color == 1 or moves_counter % 2 == 1 and color == -1):
+                        if(pieces_on_board[piece_index + 8 * color] == ''):
+                            temp_moves.append(piece_index + 8 * color)
+                        if(piece_index <=15 and color == 1 or piece_index >= 48 and color == -1):
+                            temp_moves.append(piece_index + 16 * color)
+                        if(pieces_on_board[piece_index + 7 * color] != '' and Compare_pieces_colour(piece_index, piece_index + 7 * color)):
+                            temp_moves.append(piece_index + 7 * color)
+                        if(pieces_on_board[piece_index + 9 * color] != '' and Compare_pieces_colour(piece_index, piece_index + 9 * color)):
+                            temp_moves.append(piece_index + 9 * color)
+                    moves.append((piece_index, temp_moves))
+                if(piece_type.lower() == 'r'):
+                    for i in range(piece_index,64,8): #UP
+                        if(i != piece_index):
+                            if(pieces_on_board[i] == ''):
+                                temp_moves.append(i)
+                            else:
+                                if(Compare_pieces_colour(piece_index, i)):
+                                    temp_moves.append(i)
+                                break
+                    for i in range(piece_index,-1,-8): #DOWN
+                        if(i != piece_index):
+                            if(pieces_on_board[i] == ''):
+                                temp_moves.append(i)
+                            else:
+                                if(Compare_pieces_colour(piece_index, i)):
+                                    temp_moves.append(i)
+                                break
+                    row,col = Square_to_row_and_column(piece_index)
+                    for i in range(piece_index, (row + 1) * 8, 1):
+                        if(i != piece_index):
+                            if(pieces_on_board[i] == ''):
+                                print(piece_index,i)
+                                temp_moves.append(i)
+                            else:
+                                if(Compare_pieces_colour(piece_index, i)):
+                                    temp_moves.append(i)
+                                break
+                    for i in range(piece_index, (row * 8) - 1, -1):
+                        if(i != piece_index):
+                            if(pieces_on_board[i] == ''):
+                                print(piece_index,i)
+                                temp_moves.append(i)
+                            else:
+                                if(Compare_pieces_colour(piece_index, i)):
+                                    temp_moves.append(i)
+                                break
+                    moves.append((piece_index, temp_moves))
             temp_moves = []
     return moves
 
@@ -91,16 +117,14 @@ def CheckIfMoveIsLegal(curr_sqr, dest_sqr):
 pieces_on_board = ['']*64 #CONTENT IN ORDER: type, path_to_img, position_x, position_y
 id = 0
 for piece in startPossition:
-        if(piece == '/'):
-            pass
-        else:
+        if(piece != '/'):
             if(piece.isdigit()):
                 id += int(piece)
             else:
                 pieces_on_board[id] = [piece, pygame.image.load(r"{}\{}\{}.png".format(path, 'White' if piece.islower() else 'Black' ,piece.lower())), Square_to_position(id)]
                 id += 1
 
-move_1 = move_2 = 0
+move_1 = move_2 = -1
 moved = True
 moves_counter = 0
 while running:
@@ -115,24 +139,24 @@ while running:
             moves = GenerateLegalMoves()
             square_id = Position_to_square(pygame.mouse.get_pos())
             if (pieces_on_board[square_id] == ''):
-                if(move_1 != 0 and CheckIfMoveIsLegal(move_1, square_id)):
+                if(move_1 != -1 and CheckIfMoveIsLegal(move_1, square_id)):
                     pieces_on_board[square_id] = pieces_on_board[move_1]
                     pieces_on_board[move_1] = ''
-                    move_1 = 0
+                    move_1 = -1
                     moved = True
                     moves_counter += 1
                 else:
-                    move_1 = 0
+                    move_1 = -1
             else:
-                if(move_1 != 0 and move_1 != square_id and CheckIfMoveIsLegal(move_1,square_id)):
+                if(move_1 != -1 and move_1 != square_id and CheckIfMoveIsLegal(move_1,square_id)):
                     pieces_on_board[square_id] = pieces_on_board[move_1]
                     pieces_on_board[move_1] = ''
                     move_1 = 0
                     moved = True
                     moves_counter += 1
-                elif(move_1 == 0):
+                elif(move_1 == -1):
                     move_1 = square_id
                 else:
-                    move_1 = 0
+                    move_1 = -1
         pygame.display.update()
         clock.tick(fps)
