@@ -1,4 +1,4 @@
-#### MAKING A MOVE IS BUGGED, GENERATING LEGAL MOVES WORKS FINE, IN WORK ####
+#### CURRENT STATE IS BUGGED ####
 import pygame
 path = r"C:\Users\AdamWdowiarek\Downloads\chess-main"
 # BASIC VARIABLES
@@ -93,17 +93,43 @@ def GenerateLegalMoves():
                             temp_moves.append(piece_index + 7 * color)
                         if(pieces_on_board[piece_index + 9 * color] != '' and Compare_pieces_colour(piece_index, piece_index + 9 * color)):
                             temp_moves.append(piece_index + 9 * color)
-                    moves.append((piece_index, temp_moves))
                 if(piece_type.lower() == 'r'):
                     row,col = Square_to_row_and_column(piece_index)
                     calc_moves = [Check_piece_movement((piece_index, 64, 8),piece_index), Check_piece_movement((piece_index, -1,-8),piece_index), Check_piece_movement((piece_index, (row + 1) * 8, 1),piece_index), Check_piece_movement((piece_index, (row * 8) - 1, -1),piece_index)]
                     for diagnal in calc_moves:
                         for single_move in diagnal:
                             temp_moves.append(single_move)
-                    moves.append((piece_index,temp_moves))
                 if(piece_type.lower() == 'b'):
-                    moves.append((piece_index, Check_piece_diagnal(piece_index)))
-
+                    temp_moves = Check_piece_diagnal(piece_index)
+                if(piece_type.lower() == 'q'):
+                    row,col = Square_to_row_and_column(piece_index)
+                    calc_moves = [Check_piece_movement((piece_index, 64, 8),piece_index), Check_piece_movement((piece_index, -1,-8),piece_index), Check_piece_movement((piece_index, (row + 1) * 8, 1),piece_index), Check_piece_movement((piece_index, (row * 8) - 1, -1),piece_index)]
+                    for diagnal in calc_moves:
+                        for single_move in diagnal:
+                            temp_moves.append(single_move)
+                    temp_moves = temp_moves + Check_piece_diagnal(piece_index)
+                if(piece_type.lower() == 'n'):
+                    row,col = Square_to_row_and_column(piece_index)
+                    directions = ((2,1), (2,-1), (1,2), (-1,2), (-2,1),(-2,-1),(1,-2),(1,2))
+                    for direction in directions:
+                        dest_sqr = Row_and_column_to_square(row + direction[0], col + direction[1])
+                        if(dest_sqr <= 64 and dest_sqr >= 0):
+                            if (pieces_on_board[dest_sqr] == ''):
+                                temp_moves.append(dest_sqr)
+                            elif(Compare_pieces_colour(piece_index, dest_sqr)):
+                                temp_moves.append(dest_sqr)
+                if(piece_type.lower() == 'k'):
+                    row,col = Square_to_row_and_column(piece_index)
+                    directions = ((1,0), (0,1), (-1,0), (0,-1), (1,1),(-1,1),(1,-1))
+                    for direction in directions:
+                        dest_sqr = Row_and_column_to_square(row + direction[0], col + direction[1])
+                        if(dest_sqr <= 64 and dest_sqr >= 0):
+                            if (pieces_on_board[dest_sqr] == ''):
+                                temp_moves.append(dest_sqr)
+                            elif(Compare_pieces_colour(piece_index, dest_sqr)):
+                                temp_moves.append(dest_sqr)
+            if(temp_moves != []):
+                moves.append((piece_index,temp_moves))
             temp_moves = []
     return moves
 
