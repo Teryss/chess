@@ -1,6 +1,6 @@
 #### CURRENT STATE IS BUGGED ####
 import pygame
-path = r"C:\Users\Administrator\Documents\chess"
+path = r"C:\Users\AdamWdowiare_sfm\Desktop\chess"
 # BASIC VARIABLES
 width, height = 400,400
 white = (255,255,255)
@@ -23,6 +23,9 @@ def Position_to_square(position):
 
 def Square_to_row_and_column(square_id):
     return int(square_id / 8), int(square_id % 8)
+
+def Row_and_column_to_square(row, column):
+    pass
 
 def DrawBoard(height, width, sqr_size):
     screen.fill(black)
@@ -55,11 +58,11 @@ def GenerateLegalMoves():
             if(moves_counter % 2 == 0 and color == 1 or moves_counter % 2 == 1 and color == -1):
                 if(piece_type.lower() == 'p'):
                     if(moves_counter % 2 == 0 and color == 1 or moves_counter % 2 == 1 and color == -1):
-                        if(pieces_on_board[piece_index + 8 * color] == ''):
+                        if(pieces_on_board[piece_index + 8 * color] == ''): #1 UP
                             temp_moves.append(piece_index + 8 * color)
-                        if(piece_index <=15 and color == 1 or piece_index >= 48 and color == -1):
+                        if(piece_index <=15 and color == 1 or piece_index >= 48 and color == -1): #2 UP
                             temp_moves.append(piece_index + 16 * color)
-                        if(pieces_on_board[piece_index + 7 * color] != '' and Compare_pieces_colour(piece_index, piece_index + 7 * color)):
+                        if(pieces_on_board[piece_index + 7 * color] != '' and Compare_pieces_colour(piece_index, piece_index + 7 * color)): #TAKING
                             temp_moves.append(piece_index + 7 * color)
                         if(pieces_on_board[piece_index + 9 * color] != '' and Compare_pieces_colour(piece_index, piece_index + 9 * color)):
                             temp_moves.append(piece_index + 9 * color)
@@ -82,7 +85,7 @@ def GenerateLegalMoves():
                                     temp_moves.append(i)
                                 break
                     row,col = Square_to_row_and_column(piece_index)
-                    for i in range(piece_index, (row + 1) * 8, 1):
+                    for i in range(piece_index, (row + 1) * 8, 1): #RIGHT
                         if(i != piece_index):
                             if(pieces_on_board[i] == ''):
                                 print(piece_index,i)
@@ -91,7 +94,7 @@ def GenerateLegalMoves():
                                 if(Compare_pieces_colour(piece_index, i)):
                                     temp_moves.append(i)
                                 break
-                    for i in range(piece_index, (row * 8) - 1, -1):
+                    for i in range(piece_index, (row * 8) - 1, -1): #LEFT
                         if(i != piece_index):
                             if(pieces_on_board[i] == ''):
                                 print(piece_index,i)
@@ -101,6 +104,7 @@ def GenerateLegalMoves():
                                     temp_moves.append(i)
                                 break
                     moves.append((piece_index, temp_moves))
+
             temp_moves = []
     return moves
 
@@ -156,7 +160,7 @@ while running:
                     moves_counter += 1
                 elif(move_1 == -1):
                     move_1 = square_id
-                else:
+                elif(move_1 != square_id):
                     move_1 = -1
         pygame.display.update()
         clock.tick(fps)
