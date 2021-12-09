@@ -1,22 +1,25 @@
 #### CURRENT STATE IS BUGGED ####
 import pygame
-path = r"C:\Users\AdamWdowiarek\Downloads\chess-main"
+path = r"C:\Users\AdamWdowiare_8u\Desktop\chess-main"
 # BASIC VARIABLES
-width, height = 400,400
-white = (255,255,255)
-black = (181,101,29)
+width, height = 400, 400
+white = (255, 255, 255)
+black = (181, 101, 29)
 running = True
-row,col = 8,8
+row, col = 8, 8
 sqr_size = int(width/8)
 fps = 45
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Chess board")
 startPossition = "rnbkqbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBKQBNR"
+pieces_on_board = ['']*64  # CONTENT IN ORDER: type, path_to_img, position_x, position_y
+id = 0
+pinned_pieces = list()
 
 def Square_to_position(square_id):
     x = square_id % 8 * sqr_size
     y = int(square_id / 8) * sqr_size
-    return x,y
+    return x, y
 
 def Position_to_square(position):
     return int(position[0] / 50) + 8 * int(position[1]/50)
@@ -29,7 +32,7 @@ def Row_and_column_to_square(row, column):
 
 def Check_piece_movement(args,cur_sqr):
     legal_moves = list()
-    for i in range(args[0], args[1],args[2]):
+    for i in range(args[0], args[1], args[2]):
         if(i != cur_sqr):
             if(pieces_on_board[i] == ''):
                 legal_moves.append(i)
@@ -41,7 +44,7 @@ def Check_piece_movement(args,cur_sqr):
 def Check_piece_diagnal(cur_sqr):
     legal_moves = list()
     row, col = Square_to_row_and_column(cur_sqr)
-    diagnals = ((1,1), (1,-1), (-1,1), (-1,-1))
+    diagnals = ((1, 1), (1, -1), (-1, 1), (-1, -1))
     for diagnal in diagnals:
         for i in range(1,9):
             check_square = Row_and_column_to_square(row + i * diagnal[0], col + i * diagnal[1])
@@ -73,6 +76,7 @@ def Compare_pieces_colour(id1, id2):
         return True
     else:
         return False
+
 
 def GenerateLegalMoves():
     moves = list()
@@ -120,21 +124,30 @@ def GenerateLegalMoves():
                                 temp_moves.append(dest_sqr)
                 if(piece_type.lower() == 'k'):
                     row,col = Square_to_row_and_column(piece_index)
-                    directions = ((1,0), (0,1), (-1,0), (0,-1), (1,1),(-1,1),(1,-1))
+                    directions = ((1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, 1), (1, -1))
                     for direction in directions:
                         dest_sqr = Row_and_column_to_square(row + direction[0], col + direction[1])
-                        if(dest_sqr <= 64 and dest_sqr >= 0):
+                        if(0 <= dest_sqr <= 64):
                             if (pieces_on_board[dest_sqr] == ''):
                                 temp_moves.append(dest_sqr)
                             elif(Compare_pieces_colour(piece_index, dest_sqr)):
                                 temp_moves.append(dest_sqr)
             if(temp_moves != []):
-                moves.append((piece_index,temp_moves))
+                moves.append((piece_index, temp_moves))
             temp_moves = []
     return moves
 
 def CheckIfMoveIsLegal(curr_sqr, dest_sqr):
     print(moves)
+    #check
+    # wK_square, bK_square = 0, 0
+    # for piece in pieces_on_board:
+    #     if(piece[0] == 'k'):
+    #         wK_square = Position_to_square((piece[3], piece[4]))
+    #     if(piece[0] == 'K'):
+    #         bK_square = Position_to_square((piece[3], piece[4]))
+    # CONTINUE WITH CHECKS AND MATES: pinned_pieces LIST
+
     for piece in moves:
         if(piece != ''):
             if (piece[0] == curr_sqr):
@@ -143,8 +156,6 @@ def CheckIfMoveIsLegal(curr_sqr, dest_sqr):
                         return True
     return False
 
-pieces_on_board = ['']*64 #CONTENT IN ORDER: type, path_to_img, position_x, position_y
-id = 0
 for piece in startPossition:
         if(piece != '/'):
             if(piece.isdigit()):
