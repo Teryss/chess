@@ -1,4 +1,3 @@
-#### CURRENT STATE IS BUGGED ####
 import pygame
 import os
 path = os.path.dirname(os.path.abspath(__file__))
@@ -34,7 +33,7 @@ def Check_piece_movement_up_down(board, args,cur_sqr):
             if(board[i] == ''):
                 legal_moves.append(i)
             else:
-                if(Compare_pieces_colour(cur_sqr, i)):
+                if(Compare_pieces_colour(cur_sqr, i, board)):
                     legal_moves.append(i)
                 return legal_moves
     return legal_moves
@@ -52,7 +51,7 @@ def Check_piece_diagonal(board, cur_sqr):
                 if(board[check_square] == ''):
                     legal_moves.append(check_square)
                 else:
-                    if(Compare_pieces_colour(cur_sqr, check_square)):
+                    if(Compare_pieces_colour(cur_sqr, check_square, board)):
                         legal_moves.append(check_square)
                     break
     return legal_moves
@@ -74,10 +73,10 @@ def DrawLegalMoves(screen, legal_moves, piece_sqr):
             for move in moves[1]:
                 x,y = Square_to_position(move)
                 pygame.draw.circle(screen, (255,0,0), (x + 25, y + 25), 10)
-def Compare_pieces_colour(id1, id2):
-    if(pieces_on_board[id1] != '' and pieces_on_board[id2] != ''):
-        if ((pieces_on_board[id1][0].islower() and pieces_on_board[id2][0].islower()) 
-            or (pieces_on_board[id1][0].isupper() and pieces_on_board[id2][0].isupper())):
+def Compare_pieces_colour(id1, id2, comp_board = pieces_on_board):
+    if(comp_board[id1] != '' and comp_board[id2] != ''):
+        if ((comp_board[id1][0].islower() and comp_board[id2][0].islower()) 
+            or (comp_board[id1][0].isupper() and comp_board[id2][0].isupper())):
             return False
     return True
 def GenerateLegalMoves(checkboard):
@@ -94,9 +93,9 @@ def GenerateLegalMoves(checkboard):
                     if(piece_index <=15 and color == 1 or piece_index >= 48 and 
                         color == -1 and checkboard[piece_index + 16 * color] == ''): #2 UP
                         temp_moves.append(piece_index + 16 * color)
-                if(checkboard[piece_index + 7 * color] != '' and Compare_pieces_colour(piece_index, piece_index + 7 * color)): #TAKING
+                if(checkboard[piece_index + 7 * color] != '' and Compare_pieces_colour(piece_index, piece_index + 7 * color, checkboard)): #TAKING
                     temp_moves.append(piece_index + 7 * color)
-                if(checkboard[piece_index + 9 * color] != '' and Compare_pieces_colour(piece_index, piece_index + 9 * color)):
+                if(checkboard[piece_index + 9 * color] != '' and Compare_pieces_colour(piece_index, piece_index + 9 * color, checkboard)):
                     temp_moves.append(piece_index + 9 * color)
                 if(color == 1 and 48 >= piece_index >= 55):
                     pass
@@ -129,7 +128,7 @@ def GenerateLegalMoves(checkboard):
                         if(0 <= dest_sqr <= 64):
                             if (checkboard[dest_sqr] == ''):
                                 temp_moves.append(dest_sqr)
-                            elif(Compare_pieces_colour(piece_index, dest_sqr)):
+                            elif(Compare_pieces_colour(piece_index, dest_sqr, checkboard)):
                                 temp_moves.append(dest_sqr)
             if(piece_type.lower() == 'k'): #KING
                 row,col = Square_to_row_and_column(piece_index)
@@ -138,7 +137,7 @@ def GenerateLegalMoves(checkboard):
                     if(0 <= dest_sqr <= 64):
                         if (checkboard[dest_sqr] == ''):
                             temp_moves.append(dest_sqr)
-                        elif(Compare_pieces_colour(piece_index, dest_sqr)):
+                        elif(Compare_pieces_colour(piece_index, dest_sqr, checkboard)):
                             temp_moves.append(dest_sqr)
             if(temp_moves != []):
                 moves.append((piece_index, temp_moves))
@@ -146,17 +145,12 @@ def GenerateLegalMoves(checkboard):
     return moves
 def CheckIfMoveIsLegal(curr_sqr, dest_sqr, pieces): # TO DO - FIND OUT WHY GAME WON'T LET BLOCK OR MOVE KING AFTER A CHECK
     if(Look_for_checks_in_posstion(moves, pieces)):
-        print("Creating alternative board scenario")
         alt_pieces = [x for x in pieces]
         alt_pieces[dest_sqr] = alt_pieces[curr_sqr]
         alt_pieces[curr_sqr] = ''
         alt_moves = GenerateLegalMoves(alt_pieces)
 
-        if alt_moves == moves or alt_pieces == pieces:
-            print("Your code don't work as expected")
-
         if(Look_for_checks_in_posstion(alt_moves, alt_pieces)):
-            print("alt moves detected check")
             return False
         return True
     else:
@@ -170,9 +164,7 @@ def Look_for_checks_in_posstion(check_moves, check_pieces):
     b_k, w_k = Locate_kings_on_board(check_pieces)
     for piece in check_moves:
         if(piece != ''):
-            if w_k in piece[1] and Compare_pieces_colour(w_k, piece[0]) or b_k in piece[1] and Compare_pieces_colour(b_k, piece[0]):
-                print("Whole : ", piece)
-                print(check_pieces[12], ";", check_pieces[21])
+            if w_k in piece[1] and Compare_pieces_colour(w_k, piece[0], check_pieces) or b_k in piece[1] and Compare_pieces_colour(b_k, piece[0], check_pieces):
                 return True
     return False
 
@@ -180,10 +172,10 @@ def Locate_kings_on_board(pieces = pieces_on_board):
     for piece in pieces:
         if(piece != ''):
             if(piece[0] == 'k'):
-                w_k = pieces_on_board.index(piece)
+                w_k = pieces.index(piece)
                 print("w_k ", w_k)
             elif(piece[0] == 'K'):
-                b_k = pieces_on_board.index(piece)
+                b_k = pieces.index(piece)
                 print("b_k ", b_k)
     return b_k, w_k
 
