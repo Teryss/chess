@@ -1,21 +1,21 @@
-#### PIECE MOVEMENT WORKS, PROBLEM WITH CHECKS ####
+#### CURRENT STATE IS BUGGED ####
 import pygame
 import os
 path = os.path.dirname(os.path.abspath(__file__))
+
 # BASIC VARIABLES
 width, height = 400, 400
 white = (255, 255, 255)
 black = (181, 101, 29)
-running = True
-row, col = 8, 8
 sqr_size = int(width/8)
 fps = 30
-screen = pygame.display.set_mode((width, height))
-pygame.display.set_caption("Chess board")
 startPossition = "rnbkqbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBKQBNR"
 pieces_on_board = ['']*64  # CONTENT IN ORDER: type, path_to_img, position_x, position_y
-id = 0
-pinned_pieces = list()
+directions = {
+    "knight":((2,1), (2,-1), (1,2), (-1,2), (-2,1),(-2,-1),(1,-2),(-1,-2)),
+    "king": ((1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, 1), (1, -1), (-1,-1)),
+    "bishop": ((1, 1), (1, -1), (-1, 1), (-1, -1))
+}
 
 def Square_to_position(square_id):
     x = square_id % 8 * sqr_size
@@ -27,7 +27,7 @@ def Square_to_row_and_column(square_id):
     return int(square_id / 8), int(square_id % 8)
 def Row_and_column_to_square(row, column):
     return row * 8 + column
-def Check_piece_movement(args,cur_sqr):
+def Check_piece_movement_up_down(args,cur_sqr):
     legal_moves = list()
     for i in range(args[0], args[1], args[2]):
         if(i != cur_sqr):
@@ -41,8 +41,7 @@ def Check_piece_movement(args,cur_sqr):
 def Check_piece_diagonal(cur_sqr):
     legal_moves = list()
     row, col = Square_to_row_and_column(cur_sqr)
-    diagnals = ((1, 1), (1, -1), (-1, 1), (-1, -1))
-    for diagnal in diagnals:
+    for diagnal in directions['bishop']:
         for i in range(1,9):
             t_row = row + i * diagnal[0]
             t_col = col + i * diagnal[1]
@@ -77,10 +76,9 @@ def DrawLegalMoves(screen, legal_moves, piece_sqr):
                 pygame.draw.circle(screen, (255,0,0), (x + 25, y + 25), 10)
 def Compare_pieces_colour(id1, id2):
     if(pieces_on_board[id1] != '' and pieces_on_board[id2] != ''):
-        if ((pieces_on_board[id1][0].islower() and pieces_on_board[id2][0].isupper()) 
-            or (pieces_on_board[id1][0].isupper() and pieces_on_board[id2][0].islower())):
-            return True
-        else: return False
+        if ((pieces_on_board[id1][0].islower() and pieces_on_board[id2][0].islower()) 
+            or (pieces_on_board[id1][0].isupper() and pieces_on_board[id2][0].isupper())):
+            return False
     return True
 def GenerateLegalMoves(checkboard):
     moves = list()
@@ -104,10 +102,10 @@ def GenerateLegalMoves(checkboard):
                     pass
             if(piece_type.lower() == 'r'): #ROOK
                 row,col = Square_to_row_and_column(piece_index)
-                calc_moves = [Check_piece_movement((piece_index, 64, 8),piece_index), 
-                              Check_piece_movement((piece_index, -1,-8),piece_index), 
-                              Check_piece_movement((piece_index, (row + 1) * 8, 1),piece_index), 
-                              Check_piece_movement((piece_index, (row * 8) - 1, -1),piece_index)]
+                calc_moves = [Check_piece_movement_up_down((piece_index, 64, 8),piece_index), 
+                              Check_piece_movement_up_down((piece_index, -1,-8),piece_index), 
+                              Check_piece_movement_up_down((piece_index, (row + 1) * 8, 1),piece_index), 
+                              Check_piece_movement_up_down((piece_index, (row * 8) - 1, -1),piece_index)]
                 for diagnal in calc_moves:
                     for single_move in diagnal:
                         temp_moves.append(single_move)
@@ -115,18 +113,17 @@ def GenerateLegalMoves(checkboard):
                 temp_moves = Check_piece_diagonal(piece_index)
             if(piece_type.lower() == 'q'): #QUEEN
                 row,col = Square_to_row_and_column(piece_index)
-                calc_moves = [Check_piece_movement((piece_index, 64, 8),piece_index), 
-                              Check_piece_movement((piece_index, -1,-8),piece_index), 
-                              Check_piece_movement((piece_index, (row + 1) * 8, 1),piece_index), 
-                              Check_piece_movement((piece_index, (row * 8) - 1, -1),piece_index)]
+                calc_moves = [Check_piece_movement_up_down((piece_index, 64, 8),piece_index), 
+                              Check_piece_movement_up_down((piece_index, -1,-8),piece_index), 
+                              Check_piece_movement_up_down((piece_index, (row + 1) * 8, 1),piece_index), 
+                              Check_piece_movement_up_down((piece_index, (row * 8) - 1, -1),piece_index)]
                 for diagnal in calc_moves:
                     for single_move in diagnal:
                         temp_moves.append(single_move)
                 temp_moves = temp_moves + Check_piece_diagonal(piece_index)
             if(piece_type.lower() == 'n'): #KNIGHT
                 row,col = Square_to_row_and_column(piece_index)
-                directions = ((2,1), (2,-1), (1,2), (-1,2), (-2,1),(-2,-1),(1,-2),(-1,-2))
-                for direction in directions:
+                for direction in directions['knight']:
                     if(row + direction[0] < 8 and col + direction[1] < 8):
                         dest_sqr = Row_and_column_to_square(row + direction[0], col + direction[1])
                         if(0 <= dest_sqr <= 64):
@@ -136,8 +133,7 @@ def GenerateLegalMoves(checkboard):
                                 temp_moves.append(dest_sqr)
             if(piece_type.lower() == 'k'): #KING
                 row,col = Square_to_row_and_column(piece_index)
-                directions = ((1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, 1), (1, -1))
-                for direction in directions:
+                for direction in directions['king']:
                     dest_sqr = Row_and_column_to_square(row + direction[0], col + direction[1])
                     if(0 <= dest_sqr <= 64):
                         if (checkboard[dest_sqr] == ''):
@@ -148,41 +144,34 @@ def GenerateLegalMoves(checkboard):
                 moves.append((piece_index, temp_moves))
             temp_moves = []
     return moves
-def CheckIfMoveIsLegal(curr_sqr, dest_sqr, pieces):
+def CheckIfMoveIsLegal(curr_sqr, dest_sqr, pieces): # TO DO - FIND OUT WHY GAME WON'T LET BLOCK OR MOVE KING AFTER A CHECK
     if(Look_for_checks_in_posstion(moves, pieces)):
         alt_pieces = [x for x in pieces]
         alt_pieces[dest_sqr] = alt_pieces[curr_sqr]
         alt_pieces[curr_sqr] = ''
         alt_moves = GenerateLegalMoves(alt_pieces)
-    #DEBUGGING
-        # print(alt_moves)
-        # for move in alt_moves:
-        #     if(move[0] == 59):
-        #         print(move)
-    #DEBUGGING
+
+        if alt_moves == moves or alt_pieces == pieces:
+            print("Your code don't work as expected")
+
         if(Look_for_checks_in_posstion(alt_moves, alt_pieces)):
             print("alt moves detected check")
             return False
         return True
-        # NOT WORKING YET :(
     else:
         for piece in moves:
-            if(piece != ''):
-                if (piece[0] == curr_sqr):
-                    for square in piece[1]:
-                        if(int(square) == int(dest_sqr)):
-                            return True
+            if curr_sqr == piece[0] and int(dest_sqr) in piece[1]:
+                return True
         return False
 
 # FUNCTIONS FOR CHECKS
-def Look_for_checks_in_posstion(moves, pieces = pieces_on_board):
-    b_k, w_k = Locate_kings_on_board(pieces)
-    for piece in moves:
+def Look_for_checks_in_posstion(check_moves, check_pieces):
+    b_k, w_k = Locate_kings_on_board(check_pieces)
+    for piece in check_moves:
         if(piece != ''):
-            for square in piece[1]:
-                if(square == w_k and Compare_pieces_colour(w_k, piece[0]) or square == b_k and Compare_pieces_colour(b_k, piece[0])):
-                    print("Piece square " , piece[0], "Move square " , square, "Whole : ", piece)
-                    return True
+            if w_k in piece[1] and Compare_pieces_colour(w_k, piece[0]) or b_k in piece[1] and Compare_pieces_colour(b_k, piece[0]):
+                print("Whole : ", piece)
+                return True
     return False
 
 def Locate_kings_on_board(pieces = pieces_on_board):
@@ -196,6 +185,9 @@ def Locate_kings_on_board(pieces = pieces_on_board):
                 print("b_k ", b_k)
     return b_k, w_k
 
+screen = pygame.display.set_mode((width, height))
+pygame.display.set_caption("Chess board")
+id = 0
 for piece in startPossition:
         if(piece != '/'):
             if(piece.isdigit()):
@@ -210,6 +202,7 @@ sqr1,sqr2 = -10,-10
 moved = True
 moves_counter = 0
 clicked = False
+running = True
 while running:
     DrawBoard(height, width, sqr_size)
     moved = False
