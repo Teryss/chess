@@ -27,18 +27,18 @@ def Square_to_row_and_column(square_id):
     return int(square_id / 8), int(square_id % 8)
 def Row_and_column_to_square(row, column):
     return row * 8 + column
-def Check_piece_movement_up_down(args,cur_sqr):
+def Check_piece_movement_up_down(board, args,cur_sqr):
     legal_moves = list()
     for i in range(args[0], args[1], args[2]):
         if(i != cur_sqr):
-            if(pieces_on_board[i] == ''):
+            if(board[i] == ''):
                 legal_moves.append(i)
             else:
                 if(Compare_pieces_colour(cur_sqr, i)):
                     legal_moves.append(i)
                 return legal_moves
     return legal_moves
-def Check_piece_diagonal(cur_sqr):
+def Check_piece_diagonal(board, cur_sqr):
     legal_moves = list()
     row, col = Square_to_row_and_column(cur_sqr)
     for diagnal in directions['bishop']:
@@ -49,7 +49,7 @@ def Check_piece_diagonal(cur_sqr):
             f_col = Square_to_row_and_column(check_square)[1]
             if(f_col != t_col): break
             if(0 <= check_square <= 63):
-                if(pieces_on_board[check_square] == ''):
+                if(board[check_square] == ''):
                     legal_moves.append(check_square)
                 else:
                     if(Compare_pieces_colour(cur_sqr, check_square)):
@@ -102,25 +102,25 @@ def GenerateLegalMoves(checkboard):
                     pass
             if(piece_type.lower() == 'r'): #ROOK
                 row,col = Square_to_row_and_column(piece_index)
-                calc_moves = [Check_piece_movement_up_down((piece_index, 64, 8),piece_index), 
-                              Check_piece_movement_up_down((piece_index, -1,-8),piece_index), 
-                              Check_piece_movement_up_down((piece_index, (row + 1) * 8, 1),piece_index), 
-                              Check_piece_movement_up_down((piece_index, (row * 8) - 1, -1),piece_index)]
+                calc_moves = [Check_piece_movement_up_down(checkboard, (piece_index, 64, 8),piece_index), 
+                              Check_piece_movement_up_down(checkboard, (piece_index, -1,-8),piece_index), 
+                              Check_piece_movement_up_down(checkboard, (piece_index, (row + 1) * 8, 1),piece_index), 
+                              Check_piece_movement_up_down(checkboard, (piece_index, (row * 8) - 1, -1),piece_index)]
                 for diagnal in calc_moves:
                     for single_move in diagnal:
                         temp_moves.append(single_move)
             if(piece_type.lower() == 'b'): #BISHOP
-                temp_moves = Check_piece_diagonal(piece_index)
+                temp_moves = Check_piece_diagonal(checkboard, piece_index)
             if(piece_type.lower() == 'q'): #QUEEN
                 row,col = Square_to_row_and_column(piece_index)
-                calc_moves = [Check_piece_movement_up_down((piece_index, 64, 8),piece_index), 
-                              Check_piece_movement_up_down((piece_index, -1,-8),piece_index), 
-                              Check_piece_movement_up_down((piece_index, (row + 1) * 8, 1),piece_index), 
-                              Check_piece_movement_up_down((piece_index, (row * 8) - 1, -1),piece_index)]
+                calc_moves = [Check_piece_movement_up_down(checkboard, (piece_index, 64, 8),piece_index), 
+                              Check_piece_movement_up_down(checkboard, (piece_index, -1,-8),piece_index), 
+                              Check_piece_movement_up_down(checkboard, (piece_index, (row + 1) * 8, 1),piece_index), 
+                              Check_piece_movement_up_down(checkboard, (piece_index, (row * 8) - 1, -1),piece_index)]
                 for diagnal in calc_moves:
                     for single_move in diagnal:
                         temp_moves.append(single_move)
-                temp_moves = temp_moves + Check_piece_diagonal(piece_index)
+                temp_moves = temp_moves + Check_piece_diagonal(checkboard, piece_index)
             if(piece_type.lower() == 'n'): #KNIGHT
                 row,col = Square_to_row_and_column(piece_index)
                 for direction in directions['knight']:
@@ -146,6 +146,7 @@ def GenerateLegalMoves(checkboard):
     return moves
 def CheckIfMoveIsLegal(curr_sqr, dest_sqr, pieces): # TO DO - FIND OUT WHY GAME WON'T LET BLOCK OR MOVE KING AFTER A CHECK
     if(Look_for_checks_in_posstion(moves, pieces)):
+        print("Creating alternative board scenario")
         alt_pieces = [x for x in pieces]
         alt_pieces[dest_sqr] = alt_pieces[curr_sqr]
         alt_pieces[curr_sqr] = ''
@@ -171,6 +172,7 @@ def Look_for_checks_in_posstion(check_moves, check_pieces):
         if(piece != ''):
             if w_k in piece[1] and Compare_pieces_colour(w_k, piece[0]) or b_k in piece[1] and Compare_pieces_colour(b_k, piece[0]):
                 print("Whole : ", piece)
+                print(check_pieces[12], ";", check_pieces[21])
                 return True
     return False
 
@@ -234,8 +236,8 @@ while running:
                             moves_counter += 1
                         else:
                             print("Illegal move")
-                    else:
-                        print("Move is illegal")
+                    # else:
+                    #     print("Move is illegal")
                 sqr1, sqr2 = -10,-10
                 clicked = False
             elif(pieces_on_board[sqr1] != '' and ( pieces_on_board[sqr1][0].islower() and moves_counter % 2 == 0 or 
