@@ -1,6 +1,5 @@
 import pygame
 import os
-path = os.path.dirname(os.path.abspath(__file__))
 
 # BASIC VARIABLES
 width, height = 400, 400
@@ -8,14 +7,21 @@ white = (255, 255, 255)
 black = (181, 101, 29)
 sqr_size = int(width/8)
 fps = 30
-startPossition = "rnbkqbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBKQBNR"
 pieces_on_board = ['']*64  # CONTENT IN ORDER: type, path_to_img, position_x, position_y
 directions = {
     "knight":((2,1), (2,-1), (1,2), (-1,2), (-2,1),(-2,-1),(1,-2),(-1,-2)),
     "king": ((1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, 1), (1, -1), (-1,-1)),
     "bishop": ((1, 1), (1, -1), (-1, 1), (-1, -1))
 }
-
+did_piece_move = {
+    "w_k" : False,
+    "b_k" : False,
+    "left_rook_white" : False,
+    "right_rook_white" : False,
+    "left_rook_black" : False,
+    "right_rook_black" : False,
+}
+#BASIC FUNCTIONS
 def Square_to_position(square_id):
     x = square_id % 8 * sqr_size
     y = int(square_id / 8) * sqr_size
@@ -26,6 +32,26 @@ def Square_to_row_and_column(square_id):
     return int(square_id / 8), int(square_id % 8)
 def Row_and_column_to_square(row, column):
     return row * 8 + column
+#DRAWING FUNCTIONS
+def DrawBoard(height, width, sqr_size):
+    screen.fill(black)
+    for y in range(0, height, sqr_size):
+        for x in range(0, width, sqr_size*2):
+            if(y % int(width/4) != 0):
+                pygame.draw.rect(screen, white, (x+sqr_size,y,sqr_size,sqr_size))
+            else:
+                pygame.draw.rect(screen, white, (x,y,sqr_size,sqr_size))
+def DrawPieces():
+    for piece in pieces_on_board:
+        if(piece != ''):
+            screen.blit(pygame.transform.scale( piece[1], (sqr_size,sqr_size)), Square_to_position(pieces_on_board.index(piece)))
+def DrawLegalMoves(screen, legal_moves, piece_sqr):
+    for moves in legal_moves:
+        if(moves[0] == piece_sqr):
+            for move in moves[1]:
+                x,y = Square_to_position(move)
+                pygame.draw.circle(screen, (255,0,0), (x + 25, y + 25), 10)
+#PIECE MOVEMENT FUNCTIONS
 def Check_piece_movement_up_down(board, args,cur_sqr):
     legal_moves = list()
     for i in range(args[0], args[1], args[2]):
@@ -55,24 +81,6 @@ def Check_piece_diagonal(board, cur_sqr):
                         legal_moves.append(check_square)
                     break
     return legal_moves
-def DrawBoard(height, width, sqr_size):
-    screen.fill(black)
-    for y in range(0, height, sqr_size):
-        for x in range(0, width, sqr_size*2):
-            if(y % int(width/4) != 0):
-                pygame.draw.rect(screen, white, (x+sqr_size,y,sqr_size,sqr_size))
-            else:
-                pygame.draw.rect(screen, white, (x,y,sqr_size,sqr_size))
-def DrawPieces():
-    for piece in pieces_on_board:
-        if(piece != ''):
-            screen.blit(pygame.transform.scale( piece[1], (sqr_size,sqr_size)), Square_to_position(pieces_on_board.index(piece)))
-def DrawLegalMoves(screen, legal_moves, piece_sqr):
-    for moves in legal_moves:
-        if(moves[0] == piece_sqr):
-            for move in moves[1]:
-                x,y = Square_to_position(move)
-                pygame.draw.circle(screen, (255,0,0), (x + 25, y + 25), 10)
 def Compare_pieces_colour(id1, id2, comp_board = pieces_on_board):
     if(comp_board[id1] != '' and comp_board[id2] != ''):
         if ((comp_board[id1][0].islower() and comp_board[id2][0].islower()) 
@@ -97,8 +105,9 @@ def GenerateLegalMoves(checkboard):
                     temp_moves.append(piece_index + 7 * color)
                 if(checkboard[piece_index + 9 * color] != '' and Compare_pieces_colour(piece_index, piece_index + 9 * color, checkboard)):
                     temp_moves.append(piece_index + 9 * color)
-                if(color == 1 and 48 >= piece_index >= 55):
-                    pass
+                # if(color == 1 and 48 >= piece_index >= 55):
+                #     pass
+                #TODO IMPLEMENT EN PASSANT
             if(piece_type.lower() == 'r'): #ROOK
                 row,col = Square_to_row_and_column(piece_index)
                 calc_moves = [Check_piece_movement_up_down(checkboard, (piece_index, 64, 8),piece_index), 
@@ -143,7 +152,11 @@ def GenerateLegalMoves(checkboard):
                 moves.append((piece_index, temp_moves))
             temp_moves = []
     return moves
-def CheckIfMoveIsLegal(curr_sqr, dest_sqr, pieces): # TO DO - FIND OUT WHY GAME WON'T LET BLOCK OR MOVE KING AFTER A CHECK
+def Castle(checkboard,moves):
+    #IMPLEMENT CASTLING
+    pass
+#FUNCTIONS FOR CHECKS
+def CheckIfMoveIsLegal(curr_sqr, dest_sqr, pieces):
     if(Look_for_checks_in_posstion(moves, pieces)):
         alt_pieces = [x for x in pieces]
         alt_pieces[dest_sqr] = alt_pieces[curr_sqr]
@@ -158,8 +171,6 @@ def CheckIfMoveIsLegal(curr_sqr, dest_sqr, pieces): # TO DO - FIND OUT WHY GAME 
             if curr_sqr == piece[0] and int(dest_sqr) in piece[1]:
                 return True
         return False
-
-# FUNCTIONS FOR CHECKS
 def Look_for_checks_in_posstion(check_moves, check_pieces):
     b_k, w_k = Locate_kings_on_board(check_pieces)
     for piece in check_moves:
@@ -167,7 +178,6 @@ def Look_for_checks_in_posstion(check_moves, check_pieces):
             if w_k in piece[1] and Compare_pieces_colour(w_k, piece[0], check_pieces) or b_k in piece[1] and Compare_pieces_colour(b_k, piece[0], check_pieces):
                 return True
     return False
-
 def Locate_kings_on_board(pieces = pieces_on_board):
     for piece in pieces:
         if(piece != ''):
@@ -178,10 +188,10 @@ def Locate_kings_on_board(pieces = pieces_on_board):
                 b_k = pieces.index(piece)
                 print("b_k ", b_k)
     return b_k, w_k
-
-screen = pygame.display.set_mode((width, height))
-pygame.display.set_caption("Chess board")
+#CREATING STARTING POSITION
 id = 0
+startPossition = "rnbkqbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBKQBNR"
+path = os.path.dirname(os.path.abspath(__file__))
 for piece in startPossition:
         if(piece != '/'):
             if(piece.isdigit()):
@@ -191,7 +201,9 @@ for piece in startPossition:
                                         'White' if piece.islower() else 'Black' ,piece.lower())), 
                                         Square_to_position(id)]
                 id += 1
-
+#ACTUAL LOOP
+screen = pygame.display.set_mode((width, height))
+pygame.display.set_caption("Chess board")
 sqr1,sqr2 = -10,-10
 moved = True
 moves_counter = 0
