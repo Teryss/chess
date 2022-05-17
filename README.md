@@ -1,5 +1,5 @@
 # Chess game
-It's a standard chess program written in python using pygame, but the current state is *NOT* finished.
+It's a chess game written in python using pygame
 
 # Running
 In order to run, you need to have the hierarchy as in repo.
