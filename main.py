@@ -1,5 +1,3 @@
-from tabnanny import check
-from black import out
 import pygame
 import os
 import sys
