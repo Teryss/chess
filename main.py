@@ -1,3 +1,4 @@
+from tabnanny import check
 from black import out
 import pygame
 import os
@@ -89,8 +90,9 @@ def Compare_pieces_colour(id1, id2, comp_board = pieces_on_board):
         if ((comp_board[id1][0].islower() and comp_board[id2][0].islower()) 
             or (comp_board[id1][0].isupper() and comp_board[id2][0].isupper())):
             return False
-    return True
-def GenerateLegalMoves(checkboard):
+        return True
+    return False
+def GenerateLegalMoves(checkboard, all_moves_made):
     moves = list()
     temp_moves = list()
     for piece in checkboard:
@@ -101,16 +103,18 @@ def GenerateLegalMoves(checkboard):
             if(piece_type.lower() == 'p'): #PAWN
                 if(checkboard[piece_index + 8 * color] == ''): #1 UP
                     temp_moves.append(piece_index + 8 * color)
-                    if(piece_index <=15 and color == 1 or piece_index >= 48 and 
-                        color == -1 and checkboard[piece_index + 16 * color] == ''): #2 UP
+                    if((piece_index <=15 and color == 1 or piece_index >= 48 and color == -1) and checkboard[piece_index + 16 * color] == ''): #2 UP]
                         temp_moves.append(piece_index + 16 * color)
+                if 24 >= piece_index >= 31 and color == -1 or 32 >= piece_index >= 39 and color == 1:
+                    print('piece index: {} piece to the right {} last move {}'.format(piece_index, checkboard[piece_index+1][0], all_moves_made[-1]))
+                    if checkboard[piece_index + 1][0].tolower() == 'p' and Compare_pieces_colour(piece_index + 1, piece_index, checkboard) and all_moves_made[-1] == piece_index + 1:
+                        # temp_moves.append(piece_index + 1 + 8 * color)
+                        print("IT WORKS")
+                        #TODO IMPLEMENT EN PASSANT
                 if(checkboard[piece_index + 7 * color] != '' and Compare_pieces_colour(piece_index, piece_index + 7 * color, checkboard)): #TAKING
                     temp_moves.append(piece_index + 7 * color)
                 if(checkboard[piece_index + 9 * color] != '' and Compare_pieces_colour(piece_index, piece_index + 9 * color, checkboard)):
                     temp_moves.append(piece_index + 9 * color)
-                # if(color == 1 and 48 >= piece_index >= 55):
-                #     pass
-                #TODO IMPLEMENT EN PASSANT
             if(piece_type.lower() == 'r'): #ROOK
                 row,col = Square_to_row_and_column(piece_index)
                 temp_moves = Check_piece_movement_up_down(checkboard, (piece_index, 64, 8),piece_index) + Check_piece_movement_up_down(checkboard, (piece_index, -1,-8),piece_index) + Check_piece_movement_up_down(checkboard, (piece_index, (row + 1) * 8, 1),piece_index) + Check_piece_movement_up_down(checkboard, (piece_index, (row * 8) - 1, -1),piece_index)
@@ -123,7 +127,7 @@ def GenerateLegalMoves(checkboard):
             if(piece_type.lower() == 'n'): #KNIGHT
                 row,col = Square_to_row_and_column(piece_index)
                 for direction in directions['knight']:
-                    if(row + direction[0] < 8 and col + direction[1] < 8):
+                    if(-1 < row + direction[0] < 8 and 8 > col + direction[1] > -1):
                         dest_sqr = Row_and_column_to_square(row + direction[0], col + direction[1])
                         if(0 <= dest_sqr <= 64):
                             if (checkboard[dest_sqr] == ''):
@@ -142,25 +146,33 @@ def GenerateLegalMoves(checkboard):
             if(temp_moves != []):
                 moves.append([piece_index, temp_moves])
             temp_moves = []
+    moves = Add_castle(checkboard, moves)
     return moves
 
-def Delete_illegal_moves(checkboard, moves, piece_to_move):
-    if(Look_for_checks_in_posstion(moves, checkboard)):
-        moves = Add_castle(checkboard, moves)
+def Delete_illegal_moves(checkboard, moves):
+    check = Look_for_checks_in_posstion(moves, checkboard)
+    if check != '':
         moves_to_delete = list()
-        for piece_moves in moves:
-            if piece_moves[0] == piece_to_move: 
-                for single_move in piece_moves[1]:
+        counter_1, counter_2 = 0,0
+        for i in range(len(moves)):
+            if (checkboard[moves[i][0]][0].islower() and check == 'w_k_check') or (checkboard[moves[i][0]][0].isupper() and check == 'b_k_check'):
+                for move in moves[i][1]:
+                    counter_1 += 1
                     alt_pieces = [x for x in checkboard]
-                    alt_pieces[single_move] = alt_pieces[piece_moves[0]]
-                    alt_pieces[piece_moves[0]] = ''
+                    alt_pieces[move] = alt_pieces[moves[i][0]]
+                    alt_pieces[moves[i][0]] = ''
                     alt_moves = GenerateLegalMoves(alt_pieces)
                     if Look_for_checks_in_posstion(alt_moves, alt_pieces):
-                        moves_to_delete.append((moves.index(piece_moves), single_move))
+                        moves_to_delete.append((i,move))
+                        counter_2 += 1
+        if counter_1 - 1 == counter_2:
+            return 0
+        else:
+            print(counter_1, " ;; ", counter_2)
         for move in moves_to_delete:
-                moves[move[0]][1].remove(move[1])
-    else:
-        pass
+            if type(move) is tuple:
+                if move[1] in moves[move[0]][1]:
+                    moves[move[0]][1].remove(move[1])
     return moves
 
 def Add_castle(checkboard, moves):
@@ -198,23 +210,39 @@ def Look_for_checks_in_posstion(check_moves, check_pieces):
             all_squares_attacked_by_white += move[1]
         if(check_pieces[move[0]][0].isupper()):
             all_squares_attacked_by_black += move[1]
-    if w_k in all_squares_attacked_by_black or b_k in all_squares_attacked_by_white:
-        return True
-    else:
-        return False
+    # if w_k in all_squares_attacked_by_black or b_k in all_squares_attacked_by_white:
+    #     return True
+    # else:
+    #     return False
+    if w_k in all_squares_attacked_by_black:
+        return "w_k_check"
+    if b_k in all_squares_attacked_by_white:
+        return "b_k_check"
+    return ''
 
 def CheckIfMoveIsInGeneratedMoves(curr_sqr, dest_sqr):
-    #TODO implement moving rook while castle 
     for piece in moves:
         if curr_sqr == piece[0] and int(dest_sqr) in piece[1]:
-            #KEEP TRACK OF WHICH PIECES MOVED, WHICH ELIMINATES THE RIGHT TO CASTLE
             if curr_sqr == 63 or dest_sqr == 63: did_piece_move['right_rook_black'] = True
             elif curr_sqr == 56 or dest_sqr == 56: did_piece_move['left_rook_black'] = True
             elif curr_sqr == 0 or dest_sqr == 0: did_piece_move['left_rook_white'] = True
             elif curr_sqr == 7 or dest_sqr == 7: did_piece_move['right_rook_white'] = True
-            elif curr_sqr == 3: did_piece_move['w_k'] = True
-            elif curr_sqr == 59: did_piece_move['b_k'] = True
-            ####
+            elif curr_sqr == 3:
+                if dest_sqr == 1:
+                    pieces_on_board[2] = pieces_on_board[0]
+                    pieces_on_board[0] = ''
+                elif dest_sqr == 5:
+                    pieces_on_board[4] = pieces_on_board[7]
+                    pieces_on_board[7] = ''
+                did_piece_move['w_k'] = True
+            elif curr_sqr == 59: 
+                if dest_sqr == 57:
+                    pieces_on_board[58] = pieces_on_board[56]
+                    pieces_on_board[56] = ''
+                elif dest_sqr == 61:
+                    pieces_on_board[60] = pieces_on_board[63]
+                    pieces_on_board[63] = '' 
+                did_piece_move['b_k'] = True
             return True
     return False
 id = 0
@@ -236,12 +264,18 @@ sqr1,sqr2 = -10,-10
 moved = True
 moves_counter = 0
 clicked = False
+global running
 running = True
 all_moves_made = list()
+are_moves_generated = False
 while running:
     DrawBoard(height, width, sqr_size)
-    moved = False
     DrawPieces()
+    if are_moves_generated == False:
+        moves = Delete_illegal_moves(pieces_on_board, GenerateLegalMoves(pieces_on_board, all_moves_made))
+        if moves == 0:
+            running = False
+        are_moves_generated == True
     if(clicked): 
         DrawLegalMoves(screen, moves, sqr1)
     clock = pygame.time.Clock()
@@ -260,6 +294,7 @@ while running:
                             moves_counter += 1
                             all_moves_made.append(sqr1)
                             print("DONE")
+                            are_moves_generated = False
                         else:
                             print("Illegal move 1")
                     elif((pieces_on_board[sqr1][0].islower() and pieces_on_board[sqr2][0].isupper() or 
@@ -269,6 +304,7 @@ while running:
                             pieces_on_board[sqr2] = ''
                             moves_counter += 1
                             all_moves_made.append(sqr1)
+                            are_moves_generated = False
                             print("DONE 2")
                         else:
                             print("Illegal move 2")
@@ -276,8 +312,6 @@ while running:
                 clicked = False
             elif(pieces_on_board[sqr1] != '' and ( pieces_on_board[sqr1][0].islower() and moves_counter % 2 == 0 or 
                                                     pieces_on_board[sqr1][0].isupper() and moves_counter % 2 == 1 )): #FIRST CLICK
-
-                moves = Delete_illegal_moves(pieces_on_board, GenerateLegalMoves(pieces_on_board), sqr1)
                 clicked = True
                 sqr2 = sqr1
         pygame.display.update()
